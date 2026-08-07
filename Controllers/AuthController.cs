@@ -155,5 +155,5 @@ public class AuthController : ControllerBase
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
-    //test github connection on api code
+
 }
