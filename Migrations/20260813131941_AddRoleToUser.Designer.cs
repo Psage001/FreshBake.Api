@@ -4,6 +4,7 @@ using FreshBake.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FreshBake.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260813131941_AddRoleToUser")]
+    partial class AddRoleToUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -22,23 +25,6 @@ namespace FreshBake.API.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("AccessLevel", b =>
-                {
-                    b.Property<int>("AccessLevelId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AccessLevelId"));
-
-                    b.Property<string>("AccessLevelName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("AccessLevelId");
-
-                    b.ToTable("AccessLevel");
-                });
-
             modelBuilder.Entity("FreshBake.API.Models.User", b =>
                 {
                     b.Property<int>("UserId")
@@ -46,11 +32,6 @@ namespace FreshBake.API.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
-
-                    b.Property<int>("AccessLevelId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(2);
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -73,29 +54,20 @@ namespace FreshBake.API.Migrations
                     b.Property<DateTime?>("ResetTokenExpires")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Surname")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("UserId");
 
-                    b.HasIndex("AccessLevelId");
-
                     b.HasIndex("Email")
                         .IsUnique();
 
                     b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("FreshBake.API.Models.User", b =>
-                {
-                    b.HasOne("AccessLevel", "AccessLevel")
-                        .WithMany()
-                        .HasForeignKey("AccessLevelId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("AccessLevel");
                 });
 #pragma warning restore 612, 618
         }

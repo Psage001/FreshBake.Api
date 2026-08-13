@@ -1,4 +1,6 @@
-﻿namespace FreshBake.API.Models;
+﻿using FreshBake.API.Common.Enums;
+
+namespace FreshBake.API.Models;
 
 public class User
 {
@@ -16,4 +18,7 @@ public class User
     public DateTime? ResetTokenExpires { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public int AccessLevelId { get; set; } = (int)AccessLevels.Customer; 
+    public AccessLevel AccessLevel { get; set; }
 }
