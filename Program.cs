@@ -39,6 +39,7 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddAuthorization();
+builder.Services.AddScoped<EmailService>();
 
 builder.Services.AddCors(options =>
 {

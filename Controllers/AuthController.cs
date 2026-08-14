@@ -20,11 +20,13 @@ public class AuthController : ControllerBase
     private readonly AppDbContext _context;
 
     private readonly IConfiguration _config;
+    private readonly EmailService _emailService;
 
-    public AuthController ( AppDbContext context, IConfiguration config )
+    public AuthController ( AppDbContext context, IConfiguration config, EmailService emailService )
     {
         _context = context;
         _config = config;
+        _emailService = emailService;
     }
     [HttpPost("register")]
     public async Task<IActionResult> Register ( RegisterDto dto )
@@ -100,8 +102,7 @@ public class AuthController : ControllerBase
 
         var resetLink = $"http://localhost:5173/reset-password?token={resetToken}";
 
-        // TODO: send this via real email (e.g. SendGrid, SMTP) instead of logging it
-        Console.WriteLine($"Password reset link: {resetLink}");
+        await _emailService.SendPasswordResetEmail(user.Email, resetLink);
 
         return Ok(new { message = "If that email exists, a reset link has been sent." });
     }

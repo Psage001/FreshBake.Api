@@ -3,6 +3,7 @@ using FreshBake.API.DTOs.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 [Authorize]
 [ApiController]
@@ -17,10 +18,10 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<UserListDto>>> GetUsers ()
+    public async Task<ActionResult<IEnumerable<UserDto>>> GetUsers ()
     {
         var users = await _context.Users
-            .Select(u => new UserListDto
+            .Select(u => new UserDto
             {
                 UserId = u.UserId,
                 Name = u.Name,
@@ -34,8 +35,34 @@ public class UsersController : ControllerBase
         return Ok(users);
     }
 
+    [HttpGet("current-user-profile")]
+    public async Task<ActionResult<UserDto>> GetCurrentUserProfile ()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (userIdClaim == null || !int.TryParse(userIdClaim, out int userId))
+            return Unauthorized();
+
+        var dto = await _context.Users
+            .Where(u => u.UserId == userId)
+            .Select(u => new UserDto
+            {
+                UserId = u.UserId,
+                Name = u.Name,
+                Surname = u.Surname,
+                Email = u.Email,
+                AccessLevelId = u.AccessLevelId,
+                AccessLevelName = u.AccessLevel.AccessLevelName
+            })
+            .FirstOrDefaultAsync();
+
+        if (dto == null) return NotFound();
+
+        return Ok(dto);
+    }
+
     [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateUser ( int id, UserListDto dto )
+    public async Task<IActionResult> UpdateUser ( int id, UserDto dto )
     {
         var user = await _context.Users.FindAsync(id);
         if (user == null) return NotFound();
