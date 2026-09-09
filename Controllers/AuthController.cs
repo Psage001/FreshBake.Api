@@ -1,5 +1,4 @@
-﻿// Controllers/AuthController.cs
-using FreshBake.API.Data;
+﻿using FreshBake.API.Data;
 using FreshBake.API.DTOs;
 using FreshBake.API.DTOs.Auth;
 using FreshBake.API.Models;
@@ -140,11 +139,13 @@ public class AuthController : ControllerBase
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
-        {
-        new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
-        new Claim(JwtRegisteredClaimNames.Email, user.Email),
-        new Claim(ClaimTypes.Name, $"{user.Name} {user.Surname}")
-    };
+         {
+            new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim(ClaimTypes.Name, $"{user.Name} {user.Surname}"),
+            new Claim("AccessLevelId", user.AccessLevelId.ToString())
+        };
+
 
         var token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"],
@@ -154,6 +155,7 @@ public class AuthController : ControllerBase
             signingCredentials: credentials
         );
 
+        
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 

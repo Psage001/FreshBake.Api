@@ -4,6 +4,7 @@ using FreshBake.API.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace FreshBake.API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260908114236_SeedProductCatalog")]
+    partial class SeedProductCatalog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -96,21 +99,6 @@ namespace FreshBake.API.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("CustomerProducts");
-                });
-
-            modelBuilder.Entity("FreshBake.API.Models.CustomerProductCategory", b =>
-                {
-                    b.Property<int>("CustomerId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ProductCategoryId")
-                        .HasColumnType("int");
-
-                    b.HasKey("CustomerId", "ProductCategoryId");
-
-                    b.HasIndex("ProductCategoryId");
-
-                    b.ToTable("CustomerProductCategories");
                 });
 
             modelBuilder.Entity("FreshBake.API.Models.Product", b =>
@@ -378,25 +366,6 @@ namespace FreshBake.API.Migrations
                     b.Navigation("Product");
                 });
 
-            modelBuilder.Entity("FreshBake.API.Models.CustomerProductCategory", b =>
-                {
-                    b.HasOne("FreshBake.API.Models.Customer", "Customer")
-                        .WithMany("CustomerProductCategories")
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FreshBake.API.Models.ProductCategory", "ProductCategory")
-                        .WithMany()
-                        .HasForeignKey("ProductCategoryId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Customer");
-
-                    b.Navigation("ProductCategory");
-                });
-
             modelBuilder.Entity("FreshBake.API.Models.Product", b =>
                 {
                     b.HasOne("FreshBake.API.Models.ProductCategory", "ProductCategory")
@@ -421,8 +390,6 @@ namespace FreshBake.API.Migrations
 
             modelBuilder.Entity("FreshBake.API.Models.Customer", b =>
                 {
-                    b.Navigation("CustomerProductCategories");
-
                     b.Navigation("CustomerProducts");
                 });
 

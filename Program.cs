@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using FreshBake.API.Common.Enums;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,7 +39,15 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireAssertion(context =>
+            context.User.HasClaim(c =>
+                c.Type == "AccessLevelId" &&
+                (c.Value == ((int)AccessLevels.Admin).ToString() ||
+                 c.Value == ((int)AccessLevels.SuperUser).ToString()))));
+});
 builder.Services.AddScoped<EmailService>();
 
 builder.Services.AddCors(options =>

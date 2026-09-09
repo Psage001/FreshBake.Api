@@ -22,4 +22,9 @@ public class Customer
     public DateTime SubmittedDate { get; set; } = DateTime.UtcNow;
     public DateTime? ApprovedDate { get; set; }
     public DateTime? RejectedDate { get; set; }
+
+    public string? CustomOrderNotes { get; set; }
+
+    public ICollection<CustomerProduct> CustomerProducts { get; set; } = new List<CustomerProduct>();
+    public ICollection<CustomerProductCategory> CustomerProductCategories { get; set; } = new List<CustomerProductCategory>();
 }

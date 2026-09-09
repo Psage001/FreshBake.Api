@@ -2,7 +2,7 @@
 
 namespace FreshBake.API.Dtos.Customer;
 
-public class CustomerApplicationResponseDto
+public class CustomerRegistrationResponseDto
 {
     public int CustomerId { get; set; }
     public string CompanyName { get; set; } = string.Empty;
@@ -12,4 +12,6 @@ public class CustomerApplicationResponseDto
     public DateTime SubmittedDate { get; set; }
     public DateTime? ApprovedDate { get; set; }
     public DateTime? RejectedDate { get; set; }
+    public List<string> SelectedCategories { get; set; } = new();
+    public string? CustomOrderNotes { get; set; }
 }
