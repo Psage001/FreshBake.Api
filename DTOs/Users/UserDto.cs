@@ -1,4 +1,4 @@
-﻿namespace FreshBake.API.DTOs.Auth
+﻿namespace FreshBake.API.DTOs.Users
 {
     public class UserDto
     {

@@ -27,6 +27,7 @@ public class AuthController : ControllerBase
         _config = config;
         _emailService = emailService;
     }
+
     [HttpPost("register")]
     public async Task<IActionResult> Register ( RegisterDto dto )
     {
@@ -56,6 +57,7 @@ public class AuthController : ControllerBase
 
         return StatusCode(201, new { message = "User registered successfully." });
     }
+
     [HttpPost("login")]
     public async Task<IActionResult> Login ( LoginDto dto )
     {
@@ -66,7 +68,7 @@ public class AuthController : ControllerBase
             return Unauthorized(new { error = "Invalid email or password." });
         }
 
-        var token = GenerateJwtToken(user);
+        var token = await GenerateJwtToken(user);
 
         return Ok(new
         {
@@ -132,20 +134,35 @@ public class AuthController : ControllerBase
         return Convert.ToHexString(bytes); // URL-safe, no special characters
     }
 
-    private string GenerateJwtToken ( User user )
+    private async Task<string> GenerateJwtToken ( User user )
     {
         var jwtSettings = _config.GetSection("Jwt");
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings["Key"]!));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-        var claims = new[]
-         {
+        var claims = new List<Claim>
+        {
             new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
             new Claim(JwtRegisteredClaimNames.Email, user.Email),
             new Claim(ClaimTypes.Name, $"{user.Name} {user.Surname}"),
             new Claim("AccessLevelId", user.AccessLevelId.ToString())
         };
 
+        // Add one "permissions" claim per page this user's Role can view.
+        // If RoleId is null, they simply get no permission claims —
+        // Sidebar/PermissionRoute will treat that as "no pages visible".
+        if (user.RoleId != null)
+        {
+            var pageRouteKeys = await _context.RolePagePermissions
+                .Where(rp => rp.RoleId == user.RoleId && rp.CanView)
+                .Select(rp => rp.Page.RouteKey)
+                .ToListAsync();
+
+            foreach (var routeKey in pageRouteKeys)
+            {
+                claims.Add(new Claim("permissions", routeKey));
+            }
+        }
 
         var token = new JwtSecurityToken(
             issuer: jwtSettings["Issuer"],
@@ -155,8 +172,6 @@ public class AuthController : ControllerBase
             signingCredentials: credentials
         );
 
-        
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
-
 }

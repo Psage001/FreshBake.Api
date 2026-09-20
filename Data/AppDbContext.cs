@@ -17,6 +17,10 @@ public class AppDbContext : DbContext
     public DbSet<Product> Products { get; set; }
     public DbSet<CustomerProduct> CustomerProducts { get; set; }
     public DbSet<CustomerProductCategory> CustomerProductCategories { get; set; }
+    public DbSet<Role> Roles { get; set; }
+    public DbSet<Page> Pages { get; set; }
+    public DbSet<RolePagePermission> RolePagePermissions { get; set; }
+
     protected override void OnModelCreating ( ModelBuilder modelBuilder )
     {
         modelBuilder.Entity<User>()
@@ -27,15 +31,22 @@ public class AppDbContext : DbContext
             .HasIndex(u => u.Email)
             .IsUnique();
 
+        // Customer -> AppliedByUser (who submitted the application).
+        // Not unique — application-layer logic can decide whether to
+        // block a user submitting twice while a prior one is Pending.
         modelBuilder.Entity<Customer>()
-            .HasOne(c => c.User)
-            .WithOne()
-            .HasForeignKey<Customer>(c => c.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .HasOne(c => c.AppliedByUser)
+            .WithMany()
+            .HasForeignKey(c => c.AppliedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
 
-        modelBuilder.Entity<Customer>()
-            .HasIndex(c => c.UserId)
-            .IsUnique(); // enforces one Customer record per User
+        // User -> Customer (many users can belong to one business,
+        // set only on approval or when a customer-admin adds staff).
+        modelBuilder.Entity<User>()
+            .HasOne(u => u.Customer)
+            .WithMany(c => c.Users)
+            .HasForeignKey(u => u.CustomerId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<CustomerProduct>()
             .HasKey(cp => new { cp.CustomerId, cp.ProductId });
@@ -56,13 +67,13 @@ public class AppDbContext : DbContext
             .HasForeignKey(p => p.ProductCategoryId);
 
         modelBuilder.Entity<ProductCategory>().HasData(
-    new ProductCategory { ProductCategoryId = 1, Name = "Cakes" },
-    new ProductCategory { ProductCategoryId = 2, Name = "Pies" },
-    new ProductCategory { ProductCategoryId = 3, Name = "Breads" },
-    new ProductCategory { ProductCategoryId = 4, Name = "Pastries" },
-    new ProductCategory { ProductCategoryId = 5, Name = "Cupcakes" },
-    new ProductCategory { ProductCategoryId = 6, Name = "Cookies & Biscuits" }
-);
+            new ProductCategory { ProductCategoryId = 1, Name = "Cakes" },
+            new ProductCategory { ProductCategoryId = 2, Name = "Pies" },
+            new ProductCategory { ProductCategoryId = 3, Name = "Breads" },
+            new ProductCategory { ProductCategoryId = 4, Name = "Pastries" },
+            new ProductCategory { ProductCategoryId = 5, Name = "Cupcakes" },
+            new ProductCategory { ProductCategoryId = 6, Name = "Cookies & Biscuits" }
+        );
 
         modelBuilder.Entity<Product>().HasData(
             // Cakes
@@ -98,7 +109,7 @@ public class AppDbContext : DbContext
         );
 
         modelBuilder.Entity<CustomerProductCategory>()
-    .HasKey(cpc => new { cpc.CustomerId, cpc.ProductCategoryId });
+            .HasKey(cpc => new { cpc.CustomerId, cpc.ProductCategoryId });
 
         modelBuilder.Entity<CustomerProductCategory>()
             .HasOne(cpc => cpc.Customer)
@@ -109,6 +120,106 @@ public class AppDbContext : DbContext
             .HasOne(cpc => cpc.ProductCategory)
             .WithMany()
             .HasForeignKey(cpc => cpc.ProductCategoryId);
+
+        modelBuilder.Entity<Role>()
+    .HasOne(r => r.AccessLevel)
+    .WithMany()
+    .HasForeignKey(r => r.AccessLevelId)
+    .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<RolePagePermission>()
+            .HasKey(rp => new { rp.RoleId, rp.PageId });
+
+        modelBuilder.Entity<RolePagePermission>()
+            .HasOne(rp => rp.Role)
+            .WithMany(r => r.RolePagePermissions)
+            .HasForeignKey(rp => rp.RoleId);
+
+        modelBuilder.Entity<RolePagePermission>()
+            .HasOne(rp => rp.Page)
+            .WithMany(p => p.RolePagePermissions)
+            .HasForeignKey(rp => rp.PageId);
+
+        modelBuilder.Entity<User>()
+            .HasOne(u => u.Role)
+            .WithMany()
+            .HasForeignKey(u => u.RoleId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // Page seed — unchanged from before
+        modelBuilder.Entity<Page>().HasData(
+            new Page { PageId = 1, Name = "Dashboard", RouteKey = "Dashboard" },
+            new Page { PageId = 2, Name = "Manage Users", RouteKey = "ManageUsers" },
+            new Page { PageId = 3, Name = "Manage Customers", RouteKey = "ManageCustomers" },
+            new Page { PageId = 4, Name = "Customer Manual Registration", RouteKey = "CustomerManualRegistration" },
+            new Page { PageId = 5, Name = "Manage Products", RouteKey = "ManageProducts" },
+            new Page { PageId = 6, Name = "Manage Product Categories", RouteKey = "ManageProductCategories" },
+            new Page { PageId = 7, Name = "User Permissions", RouteKey = "UserPermissions" },
+            new Page { PageId = 8, Name = "My Details", RouteKey = "MyDetails" },
+            new Page { PageId = 9, Name = "Customer Self Registration", RouteKey = "CustomerSelfRegistration" }
+        );
+
+        // Role seed — each Role now points at an existing AccessLevel row.
+        // Assumes AccessLevel.AccessLevelId values match your enum (1=Admin, 2=Customer, 3=SuperUser, 4=User).
+        modelBuilder.Entity<Role>().HasData(
+            new Role { RoleId = 1, Name = "Admin", AccessLevelId = 1 },
+            new Role { RoleId = 2, Name = "Super User", AccessLevelId = 3 },
+            new Role { RoleId = 3, Name = "Customer", Description = "Base customer access", AccessLevelId = 2 },
+            new Role { RoleId = 4, Name = "Customer Manager", Description = "Business-level management access", AccessLevelId = 2 },
+            new Role { RoleId = 5, Name = "Customer Employee", Description = "Limited business staff access", AccessLevelId = 2 },
+            new Role { RoleId = 6, Name = "User", Description = "Generic, not-yet-elevated account", AccessLevelId = 4 }
+        );
+
+        // Permission seed — same shape as before, just one extra role (RoleId 6)
+        modelBuilder.Entity<RolePagePermission>().HasData(
+            // Admin — everything
+            new RolePagePermission { RoleId = 1, PageId = 1, CanView = true },
+            new RolePagePermission { RoleId = 1, PageId = 2, CanView = true },
+            new RolePagePermission { RoleId = 1, PageId = 3, CanView = true },
+            new RolePagePermission { RoleId = 1, PageId = 4, CanView = true },
+            new RolePagePermission { RoleId = 1, PageId = 5, CanView = true },
+            new RolePagePermission { RoleId = 1, PageId = 6, CanView = true },
+            new RolePagePermission { RoleId = 1, PageId = 7, CanView = true },
+            new RolePagePermission { RoleId = 1, PageId = 8, CanView = true },
+            new RolePagePermission { RoleId = 1, PageId = 9, CanView = true },
+
+            // Super User — everything
+            new RolePagePermission { RoleId = 2, PageId = 1, CanView = true },
+            new RolePagePermission { RoleId = 2, PageId = 2, CanView = true },
+            new RolePagePermission { RoleId = 2, PageId = 3, CanView = true },
+            new RolePagePermission { RoleId = 2, PageId = 4, CanView = true },
+            new RolePagePermission { RoleId = 2, PageId = 5, CanView = true },
+            new RolePagePermission { RoleId = 2, PageId = 6, CanView = true },
+            new RolePagePermission { RoleId = 2, PageId = 7, CanView = true },
+            new RolePagePermission { RoleId = 2, PageId = 8, CanView = true },
+            new RolePagePermission { RoleId = 2, PageId = 9, CanView = true },
+
+            // Customer (base) — Dashboard, My Details, Self Registration
+            new RolePagePermission { RoleId = 3, PageId = 1, CanView = true },
+            new RolePagePermission { RoleId = 3, PageId = 8, CanView = true },
+            new RolePagePermission { RoleId = 3, PageId = 9, CanView = true },
+
+            // Customer Manager — Dashboard, My Details (Admin allocates more later)
+            new RolePagePermission { RoleId = 4, PageId = 1, CanView = true },
+            new RolePagePermission { RoleId = 4, PageId = 8, CanView = true },
+
+            // Customer Employee — Dashboard, My Details
+            new RolePagePermission { RoleId = 5, PageId = 1, CanView = true },
+            new RolePagePermission { RoleId = 5, PageId = 8, CanView = true },
+
+            // User (generic) — Dashboard, My Details
+            new RolePagePermission { RoleId = 6, PageId = 1, CanView = true },
+            new RolePagePermission { RoleId = 6, PageId = 8, CanView = true }
+
+
+        );
+
+        modelBuilder.Entity<AccessLevel>().HasData(
+            new AccessLevel { AccessLevelId = 1, AccessLevelName = "Admin" },
+            new AccessLevel { AccessLevelId = 2, AccessLevelName = "Customer" },
+            new AccessLevel { AccessLevelId = 3, AccessLevelName = "SuperUser" },
+            new AccessLevel { AccessLevelId = 4, AccessLevelName = "User" }
+        );
     }
 
 }

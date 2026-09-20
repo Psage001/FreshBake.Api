@@ -6,14 +6,11 @@ public class Customer
 {
     public int CustomerId { get; set; }
 
-    public int UserId { get; set; }
-    public User User { get; set; } = null!;
+    public int AppliedByUserId { get; set; }
+    public User AppliedByUser { get; set; } = null!;
 
     public string CompanyName { get; set; } = string.Empty;
 
-    // Business location — deliberately separate from the User's own
-    // address/location, since the user's personal location and the
-    // business location can differ (e.g. lives in Cape Town, business in George).
     public double Latitude { get; set; }
     public double Longitude { get; set; }
 
@@ -24,6 +21,8 @@ public class Customer
     public DateTime? RejectedDate { get; set; }
 
     public string? CustomOrderNotes { get; set; }
+
+    public ICollection<User> Users { get; set; } = new List<User>();
 
     public ICollection<CustomerProduct> CustomerProducts { get; set; } = new List<CustomerProduct>();
     public ICollection<CustomerProductCategory> CustomerProductCategories { get; set; } = new List<CustomerProductCategory>();

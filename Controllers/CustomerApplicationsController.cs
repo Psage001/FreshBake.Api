@@ -76,12 +76,11 @@ public class CustomerApplicationsController : ControllerBase
             await _emailService.SendPasswordResetEmail(user.Email, resetLink);
         }
 
-        var existingCustomer = await _context.Customers
-            .FirstOrDefaultAsync(c => c.UserId == user.UserId);
-
-        if (existingCustomer != null)
+        // A user already belongs to a business if their CustomerId is set —
+        // that's the correct check now, not a lookup by ownership on Customer.
+        if (user.CustomerId != null)
         {
-            return Conflict(new { error = "This user is already a registered customer." });
+            return Conflict(new { error = "This user is already linked to a customer account." });
         }
 
         var validCategories = await _context.ProductCategories
@@ -90,7 +89,7 @@ public class CustomerApplicationsController : ControllerBase
 
         var customer = new Customer
         {
-            UserId = user.UserId,
+            AppliedByUserId = user.UserId,
             CompanyName = request.CompanyName,
             Latitude = request.Latitude,
             Longitude = request.Longitude,
